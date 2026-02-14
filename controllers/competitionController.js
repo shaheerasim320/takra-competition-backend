@@ -95,24 +95,15 @@ exports.getCompetitionById = async (req, res) => {
 
 // @desc    Register for a competition
 // @route   POST /api/competitions/:id/register
-// @access  Private (Simulated with userId in body)
+// @access  Private
 exports.registerForCompetition = async (req, res) => {
   try {
-    const { userId } = req.body; // Temporary: passed in body
+    const userId = req.user._id;
     const competitionId = req.params.id;
-
-    if (!userId) {
-      return res.status(400).json({ message: "User ID is required" });
-    }
 
     const competition = await Competition.findById(competitionId);
     if (!competition) {
       return res.status(404).json({ message: "Competition not found" });
-    }
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
     }
 
     // 1. Check if registration is open
@@ -131,23 +122,26 @@ exports.registerForCompetition = async (req, res) => {
 
     // 3. Check if already registered
     const isRegistered = competition.participants.some(
-      (p) => p.user.toString() === userId
+      (p) => p.user.toString() === userId.toString()
     );
 
     if (isRegistered) {
       return res.status(400).json({ message: "User already registered" });
     }
 
-    // Register user
-    competition.participants.push({ user: userId, status: "confirmed" });
+    // Register user with pending status
+    competition.participants.push({ user: userId, status: "pending" });
     competition.registrationCount = competition.participants.length;
     await competition.save();
 
     // Add to user's registered competitions
-    user.registeredCompetitions.push(competitionId);
-    await user.save();
+    const user = await User.findById(userId);
+    if (!user.registeredCompetitions.includes(competitionId)) {
+      user.registeredCompetitions.push(competitionId);
+      await user.save();
+    }
 
-    res.status(200).json({ message: "Registration successful" });
+    res.status(200).json({ message: "Registration successful — pending confirmation" });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
@@ -155,7 +149,7 @@ exports.registerForCompetition = async (req, res) => {
 
 // @desc    Create a new competition
 // @route   POST /api/competitions
-// @access  Private (Simulated)
+// @access  Private (Admin)
 exports.createCompetition = async (req, res) => {
   try {
     const {
@@ -168,20 +162,10 @@ exports.createCompetition = async (req, res) => {
       endDate,
       registrationDeadline,
       maxParticipants,
-      userId, // Temporary: passed in body
     } = req.body;
 
     // Basic Validation
-    if (
-      !title ||
-      !description ||
-      !category ||
-      !rules ||
-      !startDate ||
-      !endDate ||
-      !registrationDeadline ||
-      !userId
-    ) {
+    if (!title || !description || !category || !rules || !startDate || !endDate || !registrationDeadline) {
       return res.status(400).json({ message: "Please fill in all required fields" });
     }
 
@@ -198,12 +182,6 @@ exports.createCompetition = async (req, res) => {
       return res.status(400).json({ message: "Registration deadline must be before start date" });
     }
 
-    // Verify User exists (simulated auth)
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
     const competition = await Competition.create({
       title,
       description,
@@ -214,10 +192,99 @@ exports.createCompetition = async (req, res) => {
       endDate,
       registrationDeadline,
       maxParticipants,
-      createdBy: userId,
+      createdBy: req.user._id,
     });
 
     res.status(201).json(competition);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// @desc    Update a competition
+// @route   PUT /api/competitions/:id
+// @access  Private (Admin)
+exports.updateCompetition = async (req, res) => {
+  try {
+    const competition = await Competition.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    ).populate("category", "name");
+
+    if (!competition) {
+      return res.status(404).json({ message: "Competition not found" });
+    }
+
+    res.status(200).json(competition);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// @desc    Delete a competition
+// @route   DELETE /api/competitions/:id
+// @access  Private (Admin)
+exports.deleteCompetition = async (req, res) => {
+  try {
+    const competition = await Competition.findByIdAndDelete(req.params.id);
+    if (!competition) {
+      return res.status(404).json({ message: "Competition not found" });
+    }
+    res.status(200).json({ message: "Competition deleted" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// @desc    Get all registrations for a competition
+// @route   GET /api/competitions/:id/registrations
+// @access  Private (Admin)
+exports.getCompetitionRegistrations = async (req, res) => {
+  try {
+    const competition = await Competition.findById(req.params.id)
+      .populate("participants.user", "name email avatar");
+
+    if (!competition) {
+      return res.status(404).json({ message: "Competition not found" });
+    }
+
+    res.status(200).json({
+      competitionTitle: competition.title,
+      participants: competition.participants,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// @desc    Update registration status (confirm/reject)
+// @route   PATCH /api/competitions/:id/registrations/:userId
+// @access  Private (Admin)
+exports.updateRegistrationStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!["pending", "confirmed", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const competition = await Competition.findById(req.params.id);
+    if (!competition) {
+      return res.status(404).json({ message: "Competition not found" });
+    }
+
+    const participant = competition.participants.find(
+      (p) => p.user.toString() === req.params.userId
+    );
+
+    if (!participant) {
+      return res.status(404).json({ message: "Participant not found" });
+    }
+
+    participant.status = status;
+    await competition.save();
+
+    res.status(200).json({ message: `Registration ${status}`, participant });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }

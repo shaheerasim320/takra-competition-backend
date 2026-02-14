@@ -1,10 +1,15 @@
 const express = require("express");
 const router = express.Router();
+const { protect, authorize } = require("../middleware/auth");
 const {
   getAllCompetitions,
   getCompetitionById,
   registerForCompetition,
   createCompetition,
+  updateCompetition,
+  deleteCompetition,
+  getCompetitionRegistrations,
+  updateRegistrationStatus,
 } = require("../controllers/competitionController");
 
 /**
@@ -126,125 +131,16 @@ const {
  */
 router.get("/", getAllCompetitions);
 
-/**
- * @swagger
- * /competitions:
- *   post:
- *     summary: Create a new competition
- *     tags: [Competitions]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - title
- *               - description
- *               - category
- *               - rules
- *               - startDate
- *               - endDate
- *               - registrationDeadline
- *               - userId
- *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               category:
- *                 type: string
- *                 description: Category ID
- *               rules:
- *                 type: string
- *               prizes:
- *                 type: string
- *               startDate:
- *                 type: string
- *                 format: date-time
- *               endDate:
- *                 type: string
- *                 format: date-time
- *               registrationDeadline:
- *                 type: string
- *                 format: date-time
- *               maxParticipants:
- *                 type: number
- *               userId:
- *                 type: string
- *                 description: ID of user creating the competition
- *     responses:
- *       201:
- *         description: Competition created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Competition'
- *       400:
- *         description: Invalid input or date logic error
- *       404:
- *         description: User not found
- */
-router.post("/", createCompetition);
+router.post("/", protect, authorize("admin"), createCompetition);
 
-/**
- * @swagger
- * /competitions/{id}:
- *   get:
- *     summary: Get a competition by ID
- *     tags: [Competitions]
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: The competition ID
- *     responses:
- *       200:
- *         description: The competition description by id
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Competition'
- *       404:
- *         description: Competition not found
- */
 router.get("/:id", getCompetitionById);
 
-/**
- * @swagger
- * /competitions/{id}/register:
- *   post:
- *     summary: Register for a competition
- *     tags: [Competitions]
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: The competition ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - userId
- *             properties:
- *               userId:
- *                 type: string
- *                 description: The ID of the user registering
- *     responses:
- *       200:
- *         description: Registration successful
- *       400:
- *         description: Registration failed (already registered, full, or deadline passed)
- *       404:
- *         description: Competition or User not found
- */
-router.post("/:id/register", registerForCompetition);
+router.post("/:id/register", protect, registerForCompetition);
+
+// Admin routes
+router.put("/:id", protect, authorize("admin"), updateCompetition);
+router.delete("/:id", protect, authorize("admin"), deleteCompetition);
+router.get("/:id/registrations", protect, authorize("admin"), getCompetitionRegistrations);
+router.patch("/:id/registrations/:userId", protect, authorize("admin"), updateRegistrationStatus);
 
 module.exports = router;

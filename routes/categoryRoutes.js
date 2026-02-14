@@ -1,8 +1,11 @@
 const express = require("express");
 const router = express.Router();
+const { protect, authorize } = require("../middleware/auth");
 const {
   getAllCategories,
   createCategory,
+  updateCategory,
+  deleteCategory,
 } = require("../controllers/categoryController");
 
 /**
@@ -78,6 +81,8 @@ router.get("/", getAllCategories);
  *       500:
  *         description: Server error
  */
-router.post("/", createCategory); // Admin protected in future
+router.post("/", protect, authorize("admin"), createCategory);
+router.put("/:id", protect, authorize("admin"), updateCategory);
+router.delete("/:id", protect, authorize("admin"), deleteCategory);
 
 module.exports = router;

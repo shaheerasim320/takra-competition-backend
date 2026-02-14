@@ -1,21 +1,28 @@
 require("dotenv").config();
 const express = require("express");
+const http = require("http");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const connectDB = require("./config/db");
 const categoryRoutes = require("./routes/categoryRoutes");
 const competitionRoutes = require("./routes/competitionRoutes");
+const userRoutes = require("./routes/userRoutes");
+const chatRoutes = require("./routes/chatRoutes");
+const chatbotRoutes = require("./routes/chatbotRoutes");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
 const passport = require("./config/passport");
-
-// Load env vars
+const initializeSocket = require("./config/socket");
 
 // Connect to database
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Initialize Socket.io
+const io = initializeSocket(server);
 
 app.use(
   cors({
@@ -45,6 +52,9 @@ app.use(passport.initialize());
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/users", userRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/chatbot", chatbotRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get("/", (req, res) => {
@@ -52,6 +62,6 @@ app.get("/", (req, res) => {
 });
 
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
 });
