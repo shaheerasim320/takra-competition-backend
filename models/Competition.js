@@ -1,6 +1,6 @@
 // models/Competition.js
 
-import mongoose from "mongoose";
+const mongoose = require("mongoose")
 
 const competitionSchema = new mongoose.Schema(
   {
@@ -91,4 +91,4 @@ const competitionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Competition", competitionSchema);
+module.exports = mongoose.model("Competition", competitionSchema);
