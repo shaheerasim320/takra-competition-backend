@@ -15,17 +15,17 @@ const passport = require("./config/passport");
 connectDB();
 
 const app = express();
-
-app.use(express.json()); // Middleware for parsing JSON
-
-// Swagger Documentation
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-// Routes
-app.use("/api/categories", categoryRoutes);
-app.use("/api/competitions", competitionRoutes);
-
 const PORT = process.env.PORT || 5000;
+
+app.use(
+  cors({
+    origin: ["http://localhost:3000", process.env.CLIENT_URL].filter(Boolean),
+    credentials: true,
+  })
+);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // ─── Logging Middleware ───────────────────────────────────────────────────────
 app.use((req, res, next) => {
@@ -33,16 +33,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// ─── Core Middleware ──────────────────────────────────────────────────────────
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    credentials: true, // Allow cookies to be sent
-  })
-);
+// Swagger Documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Routes
+app.use("/api/categories", categoryRoutes);
+app.use("/api/competitions", competitionRoutes);
 
 // ─── Passport ─────────────────────────────────────────────────────────────────
 app.use(passport.initialize());
