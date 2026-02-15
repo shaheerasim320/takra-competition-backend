@@ -233,7 +233,7 @@ router.get(
     "/google/callback",
     passport.authenticate("google", {
         session: false,
-        failureRedirect: `${process.env.CLIENT_URL || "https://takra-competition.vercel.app"}/auth/oauth-error`,
+        failureRedirect: "https://takra-competition.vercel.app/auth/oauth-error",
     }),
     googleCallback
 );

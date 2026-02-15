@@ -6,7 +6,7 @@ const Message = require("../models/Message");
 const initializeSocket = (server) => {
     const io = new Server(server, {
         cors: {
-            origin: ["http://localhost:3000", "https://takra-competition.vercel.app", process.env.CLIENT_URL].filter(Boolean),
+            origin: ["http://localhost:3000", "https://takra-competition.vercel.app"],
             credentials: true,
         },
     });
