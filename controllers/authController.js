@@ -277,11 +277,11 @@ const googleCallback = async (req, res) => {
         setTokenCookies(res, accessToken, refreshToken);
 
         // Redirect to frontend with success
-        const clientURL = process.env.CLIENT_URL || "http://localhost:5173";
+        const clientURL = process.env.CLIENT_URL || "https://takra-competition.vercel.app";
         res.redirect(`${clientURL}/auth/oauth-success?token=${accessToken}`);
     } catch (error) {
         console.error("Google callback error:", error);
-        const clientURL = process.env.CLIENT_URL || "http://localhost:5173";
+        const clientURL = process.env.CLIENT_URL || "https://takra-competition.vercel.app";
         res.redirect(`${clientURL}/auth/oauth-error`);
     }
 };

@@ -26,7 +26,7 @@ const io = initializeSocket(server);
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", process.env.CLIENT_URL].filter(Boolean),
+    origin: ["http://localhost:3000", "https://takra-competition.vercel.app", process.env.CLIENT_URL].filter(Boolean),
     credentials: true,
   })
 );
