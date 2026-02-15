@@ -37,7 +37,7 @@ passport.use(
         {
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: `${process.env.BACKEND_URL || "http://localhost:5000"}/api/auth/google/callback`,
+            callbackURL: `${process.env.BACKEND_URL || "https://takra-competition-backend-production.up.railway.app"}/api/auth/google/callback`,
             scope: ["profile", "email"],
         },
         async (accessToken, refreshToken, profile, done) => {

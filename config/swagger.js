@@ -10,7 +10,7 @@ const options = {
     },
     servers: [
       {
-        url: `${process.env.BACKEND_URL || "http://localhost:5000"}/api`,
+        url: `${process.env.BACKEND_URL || "https://takra-competition-backend-production.up.railway.app"}/api`,
         description: "API Server",
       },
     ],
